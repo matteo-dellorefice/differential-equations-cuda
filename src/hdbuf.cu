@@ -1,4 +1,4 @@
-#include "../include/hdbuf.cuh"
+#include "hdbuf.cuh"
 
 #include <stdlib.h>
 

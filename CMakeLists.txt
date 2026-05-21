@@ -22,7 +22,7 @@ set(SRC_FILES
 add_executable(${TARGET} ${SRC_FILES})
 
 target_include_directories(${TARGET} PRIVATE
-    include
+    src
     imgui
     imgui/backends)
 

@@ -1,7 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 // #include <stdio.h>
-#include "../include/heat.cuh"
+#include "heat.cuh"
 
 __device__ float finite_diff_second_r(float *inbuf, unsigned int width, int r, int c, float dr)
 {
