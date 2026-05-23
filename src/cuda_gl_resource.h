@@ -1,3 +1,5 @@
+#ifndef CUDA_GL_RESOURCE
+#define CUDA_GL_RESOURCE
 
 #include <GLFW/glfw3.h> 
 #include <cuda_gl_interop.h>
@@ -13,5 +15,6 @@ struct cuda_gl_resource
     ~cuda_gl_resource();
 
     void transfer(unsigned int *device_buffer);
-
 };
+
+#endif

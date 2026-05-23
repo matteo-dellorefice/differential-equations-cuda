@@ -3,9 +3,10 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "cuda_gl_resource.h"
-#include "hdbuf.cuh"
-#include "heat.cuh"
-#include "style_transform.cuh"
+// #include "hdbuf.cuh"
+// #include "heat.cuh"
+// #include "style_transform.cuh"
+#include "sim_env.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -62,7 +63,7 @@ int main(int, char**)
     // // Create window with graphics context
     // float main_scale = 1.5 * ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     // printf("main_scale: %f\n", main_scale);
-    GLFWwindow* window = glfwCreateWindow(1280, 800, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 800, "PDE Simulator", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -112,42 +113,33 @@ int main(int, char**)
 
     // findCudaGLDevice();
 
-    
-    hdbuf_t in = hdbuf_create(WIDTH * HEIGHT);
-    hdbuf_t out = hdbuf_create(WIDTH * HEIGHT);
+    float * init = (float *) calloc(WIDTH * HEIGHT, sizeof(float));
     int col_center = WIDTH / 2;
     int row_center = HEIGHT / 2;
-    float radius = HEIGHT / 2;
+    float radius = HEIGHT / 4;
+
     for (int r = 0; r < HEIGHT; r++) {
         for (int c = 0; c < WIDTH; c++) {
             float dist = sqrt((r - row_center) * (r - row_center) + (c - col_center) * (c - col_center));
             if (dist < radius) {
-                in.host[c + r * WIDTH] = 1.;
+                init[c + r * WIDTH] = 1.;
             }
         }
     }
-    hdbuf_memcpy(in, cudaMemcpyHostToDevice);
-    // for (int i = 0; i < 100; i++) {
-    //     heat(in, out, WIDTH, HEIGHT);
-    //     hdbuf_swap(&in, &out);
-    // }
-    // hdbuf_memcpy(out, cudaMemcpyDeviceToHost);
-    cuda_gl_resource resource(WIDTH, HEIGHT);
 
-    unsigned int *greybuf;
-    cudaMalloc((void**) &greybuf, WIDTH * HEIGHT * sizeof(unsigned int));
-    transform_1channel(in.device, greybuf, WIDTH, HEIGHT);
-    resource.transfer(greybuf);
+    sim_env env(WIDTH, HEIGHT);
+    cudaMemcpy(env.in1.buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        glfwWaitEvents();
+        glfwWaitEventsTimeout(1. / 60);
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
         {
             ImGui_ImplGlfw_Sleep(10);
             continue;
         }
+        env.render();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -156,9 +148,9 @@ int main(int, char**)
         ImGui::ShowDemoWindow(&show_demo_window);
 
         ImGui::Begin("Texture test2");
-        // ImGui::Text("pointer = %x", resource.texture_id);
-        // ImGui::Text("size = %d x %d", resource.width, resource.height);
-        ImGui::Image(resource.texture_id, ImVec2(WIDTH, HEIGHT));
+        ImGui::Text("Sim step %d", env.step);
+        // ImGui::Text("size = %d x %d", env.res.width, env.res.height);
+        ImGui::Image(env.res.texture_id, ImVec2(WIDTH, HEIGHT));
         ImGui::End();
 
         // Rendering
@@ -172,6 +164,7 @@ int main(int, char**)
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
+        env.run(1);
     }
 
     // Cleanup
