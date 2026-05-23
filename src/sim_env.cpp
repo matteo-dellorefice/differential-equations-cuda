@@ -1,6 +1,6 @@
 #include "sim_env.h"
 #include "style_transform.h"
-#include "heat.h"
+#include "heat_diffusion.h"
 
 #include <stdio.h>
 #include <thread>
@@ -19,7 +19,7 @@ sim_env::sim_env(unsigned int width, unsigned int height) :
 void sim_env::run(unsigned int times)
 {
     for (int i = 0; i < times; i++) {
-        heat(this);
+        heat_diffusion(this);
         swap();
         step++;
         // glfwPostEmptyEvent();

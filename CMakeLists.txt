@@ -18,7 +18,7 @@ set(SRC_FILES
     imgui/backends/imgui_impl_opengl3.cpp
     imgui/backends/imgui_impl_glfw.cpp
     src/main.cpp
-    src/heat.cu
+    src/heat_diffusion.cu
     src/cuda_gl_resource.cpp
     src/style_transform.cu
     src/device_buffer.h

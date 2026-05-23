@@ -1,6 +1,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "heat.h"
+#include "heat_diffusion.h"
 
 __device__ float finite_diff_second_r(float *inbuf, unsigned int width, int r, int c, float dr)
 {
@@ -14,7 +14,7 @@ __device__ float finite_diff_second_c(float *inbuf, unsigned int width, int r, i
     return num / (dc * dc);
 }
 
-__global__ void _heat(float *inbuf, float *outbuf, unsigned int width, unsigned int height) 
+__global__ void _heat_diffusion(float *inbuf, float *outbuf, unsigned int width, unsigned int height) 
 {
     int r = threadIdx.y + blockIdx.y * blockDim.y;
     int c = threadIdx.x + blockIdx.x * blockDim.x;
@@ -32,9 +32,9 @@ __global__ void _heat(float *inbuf, float *outbuf, unsigned int width, unsigned 
     outbuf[c + r * width] = inbuf[c + r * width] + alpha * dt * laplacian;
 }
 
-void heat(sim_env *env)
+void heat_diffusion(sim_env *env)
 {
     dim3 block(32, 32);
     dim3 grid((env->width + block.x - 1) / block.x, (env->height + block.y - 1) / block.y);
-    _heat<<<grid, block>>>(env->in1.buffer, env->in2.buffer, env->width, env->height);
+    _heat_diffusion<<<grid, block>>>(env->in1.buffer, env->in2.buffer, env->width, env->height);
 }
