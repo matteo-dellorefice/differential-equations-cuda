@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(cmake_and_cuda LANGUAGES CXX CUDA)
- 
+
+find_package(CUDA  REQUIRED)
+# include_directories("${CUDA_INCLUDE_DIRS}")
+
 include(CTest)
 
 set(TARGET diffeq)
@@ -17,11 +20,14 @@ set(SRC_FILES
     src/main.cpp
     src/hdbuf.cu
     src/heat.cu
+    src/cuda_gl_resource.cpp
+    src/style_transform.cu
 )
 
 add_executable(${TARGET} ${SRC_FILES})
-
+message(CUDA_INCLUDE_DIRS="${CUDA_INCLUDE_DIRS}")
 target_include_directories(${TARGET} PRIVATE
+    ${CUDA_INCLUDE_DIRS}
     src
     imgui
     imgui/backends)

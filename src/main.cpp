@@ -1,23 +1,52 @@
-// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
-
-// Learn about Dear ImGui:
-// - FAQ                  https://dearimgui.com/faq
-// - Getting Started      https://dearimgui.com/getting-started
-// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
-// - Introduction, links and more at the top of imgui.cpp
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <stdio.h>
+#include "cuda_gl_resource.h"
+#include "hdbuf.cuh"
+#include "heat.cuh"
+#include "style_transform.cuh"
 
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include <math.h>
+#include <stdio.h>
+#include <GLFW/glfw3.h> 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+
+// #include <helper_cuda.h>
+// #include <helper_cuda_gl.h>
 
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
+
+inline int findCudaGLDevice()
+{
+    unsigned int pCudaDeviceCount;
+    int pCudaDevices[4];
+    
+    cudaGLGetDevices(&pCudaDeviceCount, pCudaDevices, 4, cudaGLDeviceListAll);
+
+    printf("Found %d CUDA devices associated with the current OpenGL context.\n", pCudaDeviceCount);
+
+    if (pCudaDeviceCount > 0) {
+        // Output the specific device IDs found
+        for(int i = 0; i < pCudaDeviceCount; ++i) {
+            printf("Associated Device ID: %d\n", pCudaDevices[i]);
+        }
+
+        // Set the primary/first device for CUDA operations
+        cudaSetDevice(pCudaDevices[0]);
+        printf("Set active CUDA device to: %d\n", pCudaDevices[0]);
+    } else {
+        printf("No CUDA devices associated with the active GL context.\n");
+    }
+}
+
+#define WIDTH 800
+#define HEIGHT 600
 
 int main(int, char**)
 {
@@ -81,6 +110,35 @@ int main(int, char**)
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool show_demo_window = true;
 
+    // findCudaGLDevice();
+
+    
+    hdbuf_t in = hdbuf_create(WIDTH * HEIGHT);
+    hdbuf_t out = hdbuf_create(WIDTH * HEIGHT);
+    int col_center = WIDTH / 2;
+    int row_center = HEIGHT / 2;
+    float radius = HEIGHT / 2;
+    for (int r = 0; r < HEIGHT; r++) {
+        for (int c = 0; c < WIDTH; c++) {
+            float dist = sqrt((r - row_center) * (r - row_center) + (c - col_center) * (c - col_center));
+            if (dist < radius) {
+                in.host[c + r * WIDTH] = 1.;
+            }
+        }
+    }
+    hdbuf_memcpy(in, cudaMemcpyHostToDevice);
+    // for (int i = 0; i < 100; i++) {
+    //     heat(in, out, WIDTH, HEIGHT);
+    //     hdbuf_swap(&in, &out);
+    // }
+    // hdbuf_memcpy(out, cudaMemcpyDeviceToHost);
+    cuda_gl_resource resource(WIDTH, HEIGHT);
+
+    unsigned int *greybuf;
+    cudaMalloc((void**) &greybuf, WIDTH * HEIGHT * sizeof(unsigned int));
+    transform_1channel(in.device, greybuf, WIDTH, HEIGHT);
+    resource.transfer(greybuf);
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -91,12 +149,17 @@ int main(int, char**)
             continue;
         }
 
-        // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         
         ImGui::ShowDemoWindow(&show_demo_window);
+
+        ImGui::Begin("Texture test2");
+        // ImGui::Text("pointer = %x", resource.texture_id);
+        // ImGui::Text("size = %d x %d", resource.width, resource.height);
+        ImGui::Image(resource.texture_id, ImVec2(WIDTH, HEIGHT));
+        ImGui::End();
 
         // Rendering
         ImGui::Render();

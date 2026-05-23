@@ -20,7 +20,7 @@ __global__ void _heat(float *inbuf, float *outbuf, unsigned int width, unsigned 
     int r = threadIdx.y + blockIdx.y * blockDim.y;
     int c = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if ((r <= 0 || r >= height - 1) || (c <= 0 || c >= width - 1)) return;
+    if (r >= height - 1 || c >= width - 1) return;
 
     float alpha = 0.5;
     float dr = 0.1;
@@ -37,6 +37,5 @@ void heat(hdbuf_t inbuf, hdbuf_t outbuf, unsigned int width, unsigned int height
 
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    // printf("grid x y: %d %d\n", grid.x * 32, grid.y * 32);
     _heat<<<grid, block>>>(inbuf.device, outbuf.device, width, height);
 }
