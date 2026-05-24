@@ -2,10 +2,8 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "IconsFontAwesome6.h"
 #include "cuda_gl_resource.h"
-// #include "hdbuf.cuh"
-// #include "heat.cuh"
-// #include "style_transform.cuh"
 #include "sim_env.h"
 #include "heat_diffusion.h"
 
@@ -63,7 +61,7 @@ int main(int, char**)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
     // // Create window with graphics context
-    // float main_scale = 1.5 * ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
+    float main_scale = 1.1 * ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     // printf("main_scale: %f\n", main_scale);
     GLFWwindow* window = glfwCreateWindow(1280, 800, "PDE Simulator", nullptr, nullptr);
     if (window == nullptr)
@@ -83,9 +81,9 @@ int main(int, char**)
     //ImGui::StyleColorsLight();
 
     // Setup scaling
-    // ImGuiStyle& style = ImGui::GetStyle();
-    // style.ScaleAllSizes(main_scale);
-    // style.FontScaleDpi = main_scale;
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(main_scale);
+    style.FontScaleDpi = main_scale;
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -100,8 +98,8 @@ int main(int, char**)
     // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use FreeType for higher quality font rendering.
     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
     // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //style.FontSizeBase = 20.0f;
-    //io.Fonts->AddFontDefaultVector();
+    // style.FontSizeBase = 20.0f;
+    // io.Fonts->AddFontDefaultVector();
     //io.Fonts->AddFontDefaultBitmap();
     //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
@@ -109,6 +107,19 @@ int main(int, char**)
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
     //IM_ASSERT(font != nullptr);
+
+    io.Fonts->AddFontDefaultVector();
+    // float baseFontSize = 13.0f; // 13.0f is the size of the default font. Change to the font size you use.
+    // float iconFontSize = baseFontSize * 2.0f / 3.0f; // FontAwesome fonts need to have their sizes reduced by 2.0f/3.0f in order to align correctly
+
+    // merge in icons from Font Awesome
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+    ImFontConfig icons_config; 
+    icons_config.MergeMode = true; 
+    icons_config.PixelSnapH = true; 
+    // icons_config.GlyphMinAdvanceX = 8.66;
+    io.Fonts->AddFontFromFileTTF( "fonts/" FONT_ICON_FILE_NAME_FAS, .0, &icons_config);//, icons_ranges);
+    // use FONT_ICON_FILE_NAME_FAR if you want regular instead of solid
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool show_demo_window = true;
@@ -150,17 +161,39 @@ int main(int, char**)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame(); 
-        
-        ImGui::ShowDemoWindow(&show_demo_window);
 
-        ImGui::Begin("Heat diffusion simulation");
-        ImGui::Text("(FPS %.1f) Sim step: %d", ImGui::GetIO().Framerate, env.step);
-        ImGui::Text("%.1f x %.1f [m], t = %f [s], alpha = %.2f [m*m/s]", 
+        // ImGui::ShowDemoWindow(&show_demo_window);
+
+        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::Begin("Heat diffusion simulation", nullptr, ImGuiWindowFlags_MenuBar);
+        
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                if (ImGui::MenuItem("New")) {}
+                if (ImGui::MenuItem("Open", "Ctrl+O")) {}
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+        }
+
+        static bool sim_playing = false;
+        
+        if (ImGui::Button(sim_playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
+            sim_playing = !sim_playing;
+        }
+
+        ImGui::SameLine();
+        ImGui::Text("(FPS %.1f) Sim step: %d, %.1f x %.1f [m], t = %f [s], alpha = %.2f [m*m/s]", 
+            ImGui::GetIO().Framerate, 
+            env.step,
             params->width * params->dx, 
             params->height * params->dx,
             params->dt * env.step,
-            params->alpha
-        );
+            params->alpha);
         // ImGui::Text("size = %d x %d", env.res.width, env.res.height);
         ImGui::Image(env.res.texture_id, ImVec2(WIDTH, HEIGHT));
         ImGui::End();
@@ -176,7 +209,8 @@ int main(int, char**)
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
-        env.run(1);
+
+        if (sim_playing) env.run(1);
     }
 
     // Cleanup
