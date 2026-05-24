@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(cmake_and_cuda LANGUAGES CXX CUDA)
 
-find_package(CUDA  REQUIRED)
+find_package(CUDA REQUIRED)
 # include_directories("${CUDA_INCLUDE_DIRS}")
 
 include(CTest)
@@ -23,6 +23,7 @@ set(SRC_FILES
     src/style_transform.cu
     src/device_buffer.h
     src/sim_env.cpp
+    src/sim_params.h
 )
 
 add_executable(${TARGET} ${SRC_FILES})

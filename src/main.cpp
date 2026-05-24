@@ -7,6 +7,7 @@
 // #include "heat.cuh"
 // #include "style_transform.cuh"
 #include "sim_env.h"
+#include "heat_diffusion.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
+#include <memory>
 
 // #include <helper_cuda.h>
 // #include <helper_cuda_gl.h>
@@ -127,8 +129,12 @@ int main(int, char**)
         }
     }
 
-    sim_env env(WIDTH, HEIGHT);
-    cudaMemcpy(env.in1.buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
+    // heat_diffusion_params(unsigned int width, unsigned int height, 
+    //     float dx, float alpha)
+    heat_diffusion_params *params = new heat_diffusion_params(WIDTH, HEIGHT, 0.1, 0.5);
+    sim_env env(params);
+
+    cudaMemcpy(env.in1.buffer, init, env.params->width * env.params->height * sizeof(float), cudaMemcpyHostToDevice);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -143,12 +149,18 @@ int main(int, char**)
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::NewFrame(); 
         
         ImGui::ShowDemoWindow(&show_demo_window);
 
-        ImGui::Begin("Texture test2");
-        ImGui::Text("Sim step %d", env.step);
+        ImGui::Begin("Heat diffusion simulation");
+        ImGui::Text("(FPS %.1f) Sim step: %d", ImGui::GetIO().Framerate, env.step);
+        ImGui::Text("%.1f x %.1f [m], t = %f [s], alpha = %.2f [m*m/s]", 
+            params->width * params->dx, 
+            params->height * params->dx,
+            params->dt * env.step,
+            params->alpha
+        );
         // ImGui::Text("size = %d x %d", env.res.width, env.res.height);
         ImGui::Image(env.res.texture_id, ImVec2(WIDTH, HEIGHT));
         ImGui::End();

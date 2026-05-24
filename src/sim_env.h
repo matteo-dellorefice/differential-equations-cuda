@@ -3,25 +3,25 @@
 
 #include "device_buffer.h"
 #include "cuda_gl_resource.h"
+#include "sim_params.h"
 
 struct sim_env
 {
-    unsigned int step;
-    unsigned int width;
-    unsigned int height;
+    sim_params *params;
 
+    unsigned int step;
     device_buffer<float> in1;
     device_buffer<float> in2;
     device_buffer<unsigned int> out;
     cuda_gl_resource res;
 
-    sim_env(unsigned int width, unsigned int height);
+    sim_env(sim_params *params);
     
     void run(unsigned int times);
-    void swap();
-    void render();
 
-    GLuint get_texture_id();
+    void swap();
+
+    void render();
 };
 
 #endif

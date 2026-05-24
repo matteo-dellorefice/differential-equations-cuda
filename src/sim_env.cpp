@@ -1,34 +1,24 @@
 #include "sim_env.h"
+#include "sim_params.h"
 #include "style_transform.h"
-#include "heat_diffusion.h"
-
 #include <stdio.h>
-#include <thread>
-#include <GLFW/glfw3.h> 
-
-sim_env::sim_env(unsigned int width, unsigned int height) :
-    step(0), 
-    width(width), 
-    height(height),
-    in1(width * height),
-    in2(width * height),
-    out(width * height),
-    res(width, height)
+sim_env::sim_env(sim_params *params) :
+    params(params),
+    step(0),
+    in1(params->width * params->height),
+    in2(params->width * params->height),
+    out(params->width * params->height),
+    res(params->width, params->height)
 { }
 
 void sim_env::run(unsigned int times)
 {
     for (int i = 0; i < times; i++) {
-        heat_diffusion(this);
+        params->solver(this);
         swap();
         step++;
-        // glfwPostEmptyEvent();
     }
-    // std::thread t([=]() {
-        
-    // });
-
-    // t.detach();
+    // print
 }
 
 void sim_env::swap()
@@ -40,6 +30,6 @@ void sim_env::swap()
 
 void sim_env::render() 
 {
-    transform_1channel(in1.buffer, out.buffer, width, height);
+    transform_1channel(in1.buffer, out.buffer, params->width, params->height);
     res.transfer(out.buffer);
 }
