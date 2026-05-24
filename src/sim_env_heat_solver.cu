@@ -1,18 +1,7 @@
 #include "sim_env_heat.h"
+#include "finite_differences.h"
 
-__device__ float finite_diff_second_r(float *inbuf, unsigned int width, int r, int c, float dr)
-{
-    float num = inbuf[(c - 1) + r * width] - 2 * inbuf[c + r * width] + inbuf[(c + 1) + r * width];
-    return num / (dr * dr);
-}
-
-__device__ float finite_diff_second_c(float *inbuf, unsigned int width, int r, int c, float dc)
-{
-    float num = inbuf[c + (r - 1) * width] - 2 * inbuf[c + r * width] + inbuf[c + (r + 1) * width];
-    return num / (dc * dc);
-}
-
-__global__ void _heat_diffusion(float *inbuf, float *outbuf, 
+__global__ void heat_kernel(float *inbuf, float *outbuf, 
     unsigned int width, unsigned int height,
     float dx, float dt, float alpha)
 {
@@ -30,6 +19,6 @@ void sim_env_heat::solver()
 {
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    _heat_diffusion<<<grid, block>>>(in[0]->buffer, in[1]->buffer, 
+    heat_kernel<<<grid, block>>>(in[0]->buffer, in[1]->buffer, 
         width, height, dx, dt, alpha);
 }

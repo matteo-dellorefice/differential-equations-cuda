@@ -21,9 +21,12 @@ set(SRC_FILES
     src/cuda_gl_resource.cpp
     src/style_transform.cu
     src/device_buffer.h
+    src/finite_differences.cu
     src/sim_env.cpp
     src/sim_env_heat.cpp
     src/sim_env_heat_solver.cu
+    src/sim_env_wave.cpp
+    src/sim_env_wave_solver.cu
 )
 
 add_executable(${TARGET} ${SRC_FILES})

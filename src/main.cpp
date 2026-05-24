@@ -4,6 +4,7 @@
 #include "imgui_impl_opengl3.h"
 #include "IconsFontAwesome6.h"
 #include "sim_env_heat.h"
+#include "sim_env_wave.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -125,16 +126,28 @@ int main(int, char**)
     // findCudaGLDevice();
 
     float * init = (float *) calloc(WIDTH * HEIGHT, sizeof(float));
-    int col_center = WIDTH / 2;
-    int row_center = HEIGHT / 2;
-    float radius = HEIGHT / 4;
+    int col_center = 0.6 * WIDTH;
+    int row_center = 0.5 * HEIGHT;
+    float radius = 50;
 
-    for (int r = 0; r < HEIGHT; r++) {
-        for (int c = 0; c < WIDTH; c++) {
-            float dist = sqrt((r - row_center) * (r - row_center) + (c - col_center) * (c - col_center));
-            if (dist < radius) {
-                init[c + r * WIDTH] = 1.;
-            }
+    // for (int r = 0; r < HEIGHT; r++) {
+    //     for (int c = 0; c < WIDTH; c++) {
+    //         float dist = sqrt((r - row_center) * (r - row_center) + (c - col_center) * (c - col_center));
+    //         if (dist < radius) {
+    //             init[c + r * WIDTH] = 1.;
+    //         }
+    //     }
+    // }
+
+    for (int r = 1; r < HEIGHT - 1; r++) {
+        for (int c = 1; c < 40; c++) {
+            init[c + r * WIDTH] = 1.;
+        }
+    }
+
+    for (int r = 1; r < HEIGHT - 1; r++) {
+        for (int c = 300; c < 350; c++) {
+            init[c + r * WIDTH + (r / 4)] = 1.;
         }
     }
 
@@ -144,8 +157,10 @@ int main(int, char**)
     // sim_env env(params);
     // cudaMemcpy(env.in1.buffer, init, env.params->width * env.params->height * sizeof(float), cudaMemcpyHostToDevice);
 
-    sim_env_heat env(WIDTH, HEIGHT, 0.1, 1., 0.5);
+    // sim_env_heat env(WIDTH, HEIGHT, 0.1, 1., 0.5);
+    sim_env_wave env(WIDTH, HEIGHT, 1, 1., 1.);
     cudaMemcpy(env.in[0]->buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(env.in[1]->buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -187,15 +202,16 @@ int main(int, char**)
         }
 
         ImGui::SameLine();
-        ImGui::Text("(FPS %.1f) Sim step: %d, %.1f x %.1f [m], t = %f [s], dt = %f [s], dt upper bound = %f [s], alpha = %.2f [m*m/s]", 
+        ImGui::Text("(FPS %.1f) Sim step: %d, %.1f x %.1f [m], t = %f [s], dt = %f [s]", 
             ImGui::GetIO().Framerate, 
             env.step,
             env.width * env.dx, 
             env.height * env.dx,
             env.dt * env.step,
-            env.dt,
+            env.dt);
+        ImGui::Text("dt upper bound = %f [s], c = %.2f [m/s]",
             env.max_dt(),
-            env.alpha);
+            env.c);
         // ImGui::Text("size = %d x %d", env.res.width, env.res.height);
         ImGui::Image(env.res.texture_id, ImVec2(WIDTH, HEIGHT));
         ImGui::End();

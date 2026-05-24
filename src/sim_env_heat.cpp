@@ -28,5 +28,5 @@ void sim_env_heat::swap()
 
 float sim_env_heat::max_dt()
 {
-    return (dx * dx) / (4 * alpha);
+    return (dx * dx) / (4 * alpha); // TODO check CFL condition
 }
