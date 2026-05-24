@@ -18,12 +18,12 @@ set(SRC_FILES
     imgui/backends/imgui_impl_opengl3.cpp
     imgui/backends/imgui_impl_glfw.cpp
     src/main.cpp
-    src/heat_diffusion.cu
     src/cuda_gl_resource.cpp
     src/style_transform.cu
     src/device_buffer.h
     src/sim_env.cpp
-    src/sim_params.h
+    src/sim_env_heat.cpp
+    src/sim_env_heat_solver.cu
 )
 
 add_executable(${TARGET} ${SRC_FILES})

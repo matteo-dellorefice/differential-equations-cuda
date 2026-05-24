@@ -6,9 +6,11 @@
 template<typename T>
 struct device_buffer
 {
+    unsigned int size;
     T* buffer;
 
-    device_buffer(unsigned int size)
+    device_buffer(unsigned int size) : 
+        size(size)
     {
         cudaMalloc((void**) &this->buffer, size * sizeof(T));
     }

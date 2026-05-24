@@ -3,9 +3,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "IconsFontAwesome6.h"
-#include "cuda_gl_resource.h"
-#include "sim_env.h"
-#include "heat_diffusion.h"
+#include "sim_env_heat.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -142,10 +140,12 @@ int main(int, char**)
 
     // heat_diffusion_params(unsigned int width, unsigned int height, 
     //     float dx, float alpha)
-    heat_diffusion_params *params = new heat_diffusion_params(WIDTH, HEIGHT, 0.1, 0.5);
-    sim_env env(params);
+    // heat_diffusion_params *params = new heat_diffusion_params(WIDTH, HEIGHT, 0.1, 0.5);
+    // sim_env env(params);
+    // cudaMemcpy(env.in1.buffer, init, env.params->width * env.params->height * sizeof(float), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(env.in1.buffer, init, env.params->width * env.params->height * sizeof(float), cudaMemcpyHostToDevice);
+    sim_env_heat env(WIDTH, HEIGHT, 0.1, 1., 0.5);
+    cudaMemcpy(env.in[0]->buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -187,13 +187,15 @@ int main(int, char**)
         }
 
         ImGui::SameLine();
-        ImGui::Text("(FPS %.1f) Sim step: %d, %.1f x %.1f [m], t = %f [s], alpha = %.2f [m*m/s]", 
+        ImGui::Text("(FPS %.1f) Sim step: %d, %.1f x %.1f [m], t = %f [s], dt = %f [s], dt upper bound = %f [s], alpha = %.2f [m*m/s]", 
             ImGui::GetIO().Framerate, 
             env.step,
-            params->width * params->dx, 
-            params->height * params->dx,
-            params->dt * env.step,
-            params->alpha);
+            env.width * env.dx, 
+            env.height * env.dx,
+            env.dt * env.step,
+            env.dt,
+            env.max_dt(),
+            env.alpha);
         // ImGui::Text("size = %d x %d", env.res.width, env.res.height);
         ImGui::Image(env.res.texture_id, ImVec2(WIDTH, HEIGHT));
         ImGui::End();

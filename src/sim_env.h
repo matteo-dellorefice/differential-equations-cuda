@@ -3,25 +3,33 @@
 
 #include "device_buffer.h"
 #include "cuda_gl_resource.h"
-#include "sim_params.h"
+
+#include <vector>
+#include <memory> // std::unique_ptr
 
 struct sim_env
 {
-    sim_params *params;
+    unsigned int width;
+    unsigned int height;
+    float dx;
+    float dt;
 
     unsigned int step;
-    device_buffer<float> in1;
-    device_buffer<float> in2;
+    std::vector<std::unique_ptr<device_buffer<float>>> in;
     device_buffer<unsigned int> out;
     cuda_gl_resource res;
 
-    sim_env(sim_params *params);
+    sim_env(unsigned int width, unsigned int height, float dx, float dt);
     
     void run(unsigned int times);
 
-    void swap();
+    virtual void render() = 0;
 
-    void render();
+    virtual void solver() = 0;
+
+    virtual void swap() = 0;
+
+    virtual float max_dt() = 0;
 };
 
 #endif
