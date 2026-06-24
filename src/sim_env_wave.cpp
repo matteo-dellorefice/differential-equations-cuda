@@ -6,25 +6,23 @@ sim_env_wave::sim_env_wave(unsigned int width, unsigned int height, float dx, fl
     sim_env(width, height, dx, dt),
     c(c)
 {
-    in.push_back(std::unique_ptr<device_buffer<float>>(new device_buffer<float>(width * height)));
-    in.push_back(std::unique_ptr<device_buffer<float>>(new device_buffer<float>(width * height)));
-    in.push_back(std::unique_ptr<device_buffer<float>>(new device_buffer<float>(width * height)));
+    in.push_back(device_buffer<float>(width * height));
+    in.push_back(device_buffer<float>(width * height));
+    in.push_back(device_buffer<float>(width * height));
     // Courant-Friedrichs-Lewy condition: c <= dx / dt
     this->dt = std::min(dt, max_dt());
 }
 
 void sim_env_wave::render()
 {
-    transform_1channel(in[1]->buffer, out.buffer, width, height);
-    res.transfer(out.buffer);
+    transform_1channel(&(in[1]), &out, width, height);
+    res.transfer(&out);
 }
 
 void sim_env_wave::swap()
 {
-    float *tmp = in[0]->buffer;
-    in[0]->buffer = in[1]->buffer;
-    in[1]->buffer = in[2]->buffer;
-    in[2]->buffer = tmp;
+    in[0].swap(in[1]);
+    in[1].swap(in[2]);
 }
 
 float sim_env_wave::max_dt()

@@ -1,5 +1,5 @@
-#ifndef SIM_ENV_HEAT_H
-#define SIM_ENV_HEAT_H
+
+#pragma once
 
 #include "sim_env.h"
 
@@ -14,5 +14,3 @@ struct sim_env_heat : virtual public sim_env
     void swap() override;
     float max_dt() override;
 };
-
-#endif

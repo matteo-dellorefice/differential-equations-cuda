@@ -1,7 +1,7 @@
-#ifndef SIM_ENV_H
-#define SIM_ENV_H
 
-#include "device_buffer.h"
+#pragma once
+
+#include "buffer.h"
 #include "cuda_gl_resource.h"
 
 #include <vector>
@@ -15,7 +15,7 @@ struct sim_env
     float dt;
 
     unsigned int step;
-    std::vector<std::unique_ptr<device_buffer<float>>> in;
+    std::vector<device_buffer<float>> in;
     device_buffer<unsigned int> out;
     cuda_gl_resource res;
 
@@ -31,5 +31,3 @@ struct sim_env
 
     virtual float max_dt() = 0;
 };
-
-#endif

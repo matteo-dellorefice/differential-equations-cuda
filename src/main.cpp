@@ -5,6 +5,7 @@
 #include "IconsFontAwesome6.h"
 #include "sim_env_heat.h"
 #include "sim_env_wave.h"
+#include "buffer_printer.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -12,8 +13,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-#include <memory>
 
+#include <memory>
+#include <cstdlib>
+#include <iostream>
+#include <iomanip>
 // #include <helper_cuda.h>
 // #include <helper_cuda_gl.h>
 
@@ -22,27 +26,31 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-inline int findCudaGLDevice()
+inline void findCudaGLDevice()
 {
-    unsigned int pCudaDeviceCount;
+    std::cout << "[RENDERER] " << glGetString(GL_RENDERER) << std::endl;
+    std::cout << "[VERSION] " << glGetString(GL_VERSION) << std::endl; 
+
+    unsigned int pCudaDeviceCount = 0;
     int pCudaDevices[4];
-    
     cudaGLGetDevices(&pCudaDeviceCount, pCudaDevices, 4, cudaGLDeviceListAll);
 
-    printf("Found %d CUDA devices associated with the current OpenGL context.\n", pCudaDeviceCount);
-
     if (pCudaDeviceCount > 0) {
-        // Output the specific device IDs found
-        for(int i = 0; i < pCudaDeviceCount; ++i) {
-            printf("Associated Device ID: %d\n", pCudaDevices[i]);
-        }
-
-        // Set the primary/first device for CUDA operations
         cudaSetDevice(pCudaDevices[0]);
-        printf("Set active CUDA device to: %d\n", pCudaDevices[0]);
     } else {
         printf("No CUDA devices associated with the active GL context.\n");
     }
+
+    int device;
+    cudaDeviceProp props;
+    cudaGetDevice(&device);
+    cudaGetDeviceProperties(&props, device);
+
+    std::cout << std::setw(50) << std::left << "::: maxBlocksPerMultiProcessor" << props.maxBlocksPerMultiProcessor << std::endl;
+    std::cout << std::setw(50) << std::left << "::: maxThreadsPerMultiProcessor" << props.maxThreadsPerMultiProcessor << std::endl;
+    std::cout << std::setw(50) << std::left << "::: maxThreadsPerBlock" << props.maxThreadsPerBlock << std::endl;
+    std::cout << std::setw(50) << std::left << "::: sharedMemPerMultiprocessor" << props.sharedMemPerMultiprocessor << std::endl;
+    std::cout << std::setw(50) << std::left << "::: sharedMemPerBlock" << props.sharedMemPerBlock << std::endl;
 }
 
 #define WIDTH 800
@@ -50,6 +58,9 @@ inline int findCudaGLDevice()
 
 int main(int, char**)
 {
+    putenv((char *) "__NV_PRIME_RENDER_OFFLOAD=1");
+    putenv((char *) "__GLX_VENDOR_LIBRARY_NAME=nvidia");
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -62,12 +73,13 @@ int main(int, char**)
     // // Create window with graphics context
     float main_scale = 1.1 * ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     // printf("main_scale: %f\n", main_scale);
-    GLFWwindow* window = glfwCreateWindow(1280, 800, "PDE Simulator", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "PDE Simulator", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
-
+    findCudaGLDevice();
+    
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -112,23 +124,21 @@ int main(int, char**)
     // float iconFontSize = baseFontSize * 2.0f / 3.0f; // FontAwesome fonts need to have their sizes reduced by 2.0f/3.0f in order to align correctly
 
     // merge in icons from Font Awesome
-    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
-    ImFontConfig icons_config; 
-    icons_config.MergeMode = true; 
-    icons_config.PixelSnapH = true; 
-    // icons_config.GlyphMinAdvanceX = 8.66;
-    io.Fonts->AddFontFromFileTTF( "fonts/" FONT_ICON_FILE_NAME_FAS, .0, &icons_config);//, icons_ranges);
+    // static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+    // ImFontConfig icons_config; 
+    // icons_config.MergeMode = true; 
+    // icons_config.PixelSnapH = true; 
+    // // icons_config.GlyphMinAdvanceX = 8.66;
+    // io.Fonts->AddFontFromFileTTF( "fonts/" FONT_ICON_FILE_NAME_FAS, .0, &icons_config);//, icons_ranges);
     // use FONT_ICON_FILE_NAME_FAR if you want regular instead of solid
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     bool show_demo_window = true;
 
-    // findCudaGLDevice();
-
-    float * init = (float *) calloc(WIDTH * HEIGHT, sizeof(float));
-    int col_center = 0.6 * WIDTH;
-    int row_center = 0.5 * HEIGHT;
-    float radius = 50;
+    // float * init = (float *) calloc(WIDTH * HEIGHT, sizeof(float));
+    // int col_center = 0.6 * WIDTH;
+    // int row_center = 0.5 * HEIGHT;
+    // float radius = 50;
 
     // for (int r = 0; r < HEIGHT; r++) {
     //     for (int c = 0; c < WIDTH; c++) {
@@ -139,17 +149,17 @@ int main(int, char**)
     //     }
     // }
 
-    for (int r = 1; r < HEIGHT - 1; r++) {
-        for (int c = 1; c < 40; c++) {
-            init[c + r * WIDTH] = 1.;
-        }
-    }
+    // for (int r = 1; r < HEIGHT - 1; r++) {
+    //     for (int c = 1; c < 40; c++) {
+    //         init[c + r * WIDTH] = 1.;
+    //     }
+    // }
 
-    for (int r = 1; r < HEIGHT - 1; r++) {
-        for (int c = 300; c < 350; c++) {
-            init[c + r * WIDTH + (r / 4)] = 1.;
-        }
-    }
+    // for (int r = 1; r < HEIGHT - 1; r++) {
+    //     for (int c = 300; c < 350; c++) {
+    //         init[c + r * WIDTH + (r / 4)] = 1.;
+    //     }
+    // }
 
     // heat_diffusion_params(unsigned int width, unsigned int height, 
     //     float dx, float alpha)
@@ -159,8 +169,8 @@ int main(int, char**)
 
     // sim_env_heat env(WIDTH, HEIGHT, 0.1, 1., 0.5);
     sim_env_wave env(WIDTH, HEIGHT, 1, 1., 1.);
-    cudaMemcpy(env.in[0]->buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(env.in[1]->buffer, init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
+    // cudaMemcpy(&env.in[0], init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
+    // cudaMemcpy(&env.in[1], init, env.width * env.height * sizeof(float), cudaMemcpyHostToDevice);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -196,8 +206,8 @@ int main(int, char**)
         }
 
         static bool sim_playing = false;
-        
-        if (ImGui::Button(sim_playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
+
+        if (ImGui::Button(sim_playing ? "Pause" : "Play")) {
             sim_playing = !sim_playing;
         }
 
@@ -228,7 +238,11 @@ int main(int, char**)
 
         glfwSwapBuffers(window);
 
-        if (sim_playing) env.run(1);
+        if (sim_playing) {
+            if (env.step % 20 == 0)
+                print_random_gaussian(env.in[0], env.in[1], WIDTH, HEIGHT);
+            env.run(1);
+        }
     }
 
     // Cleanup

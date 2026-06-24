@@ -1,5 +1,5 @@
-#ifndef SIM_ENV_WAVE_H
-#define SIM_ENV_WAVE_H
+
+#pragma once
 
 #include "sim_env.h"
 
@@ -15,4 +15,3 @@ struct sim_env_wave : virtual public sim_env
     float max_dt() override;
 };
 
-#endif

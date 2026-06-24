@@ -19,6 +19,6 @@ void sim_env_heat::solver()
 {
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    heat_kernel<<<grid, block>>>(in[0]->buffer, in[1]->buffer, 
+    heat_kernel<<<grid, block>>>(&in[0], &in[1], 
         width, height, dx, dt, alpha);
 }

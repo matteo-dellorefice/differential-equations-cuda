@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
-project(cmake_and_cuda LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
+project(diffeq LANGUAGES CXX CUDA)
 
-find_package(CUDA REQUIRED)
 # include_directories("${CUDA_INCLUDE_DIRS}")
+find_package(CUDAToolkit REQUIRED)
 
 include(CTest)
 
@@ -20,25 +20,28 @@ set(SRC_FILES
     src/main.cpp
     src/cuda_gl_resource.cpp
     src/style_transform.cu
-    src/device_buffer.h
+    src/buffer.h
     src/finite_differences.cu
     src/sim_env.cpp
     src/sim_env_heat.cpp
     src/sim_env_heat_solver.cu
     src/sim_env_wave.cpp
     src/sim_env_wave_solver.cu
+    src/buffer_printer.cu
 )
 
 add_executable(${TARGET} ${SRC_FILES})
-message(CUDA_INCLUDE_DIRS="${CUDA_INCLUDE_DIRS}")
+set_property(TARGET ${TARGET} PROPERTY CUDA_ARCHITECTURES native)
+
 target_include_directories(${TARGET} PRIVATE
-    ${CUDA_INCLUDE_DIRS}
+    ${CUDAToolkit_INCLUDE_DIRS}
     src
     imgui
     imgui/backends)
 
 target_link_libraries(${TARGET} 
     ${CMAKE_DL_LIBS}
+    ${CUDA_CUDART}
     glfw
     GL)
 
